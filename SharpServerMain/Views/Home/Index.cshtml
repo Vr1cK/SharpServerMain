@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Форма запросов</title>
+</head>
+<body>
+    <h1>Форма запросов</h1>
+
+    <form method="post" action="/Home/Download" enctype="multipart/form-data">
+        <label for="videoFile">Выберите видео:</label>
+        <input type="file" id="videoFile" name="videoFile" accept="video/mp4" required><br><br>
+
+        <label for="startSeconds">Начальные секунды:</label>
+        <input type="number" id="startSeconds" name="startSeconds" min="0" max="9999" required><br><br>
+
+        <label for="endSeconds">Конечные секунды:</label>
+        <input type="number" id="endSeconds" name="endSeconds" min="0" max="9999" required><br><br>
+
+        <input type="submit" value="Отправить">
+    </form>
+</body>
+</html>
