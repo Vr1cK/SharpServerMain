@@ -1,9 +1,16 @@
 ﻿@model byte[]
 
-@{
-    ViewData["Title"] = "Download Video";
-}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Download File</title>
+</head>
+<body>
+    <h1>Download File</h1>
 
-<h2>Download Video</h2>
-
-<a href="@Url.Action("DownloadVideo", "Video")" class="btn btn-primary">Download</a>
+    <form action="/Download/DownloadFile" method="post">
+        <input type="hidden" name="fileData" value="@Convert.ToBase64String(Model)" />
+        <button type="submit">Download</button>
+    </form>
+</body>
+</html>

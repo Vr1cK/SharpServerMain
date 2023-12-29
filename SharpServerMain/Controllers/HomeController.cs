@@ -6,28 +6,29 @@ using System.Text;
 using Force.Crc32;
 using Newtonsoft.Json;
 using System;
+using System.Text.Json;
+using System.Reflection.Metadata;
+using SharpServerMain.Hash;
+
 namespace SharpServerMain.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IWebHostEnvironment _hostEnvironment;
-        private readonly string filePath;
         public HomeController(ILogger<HomeController> logger,
             IWebHostEnvironment hostEnvironment)
         {
             _logger = logger;
             _hostEnvironment = hostEnvironment;
-            filePath = "ex5.exe";
         }
         public IActionResult Index()
         {
             return View();
 
         }
-        public async Task<IActionResult> Download(IFormFile videoFile, int startSeconds, int endSeconds)
+        public async Task<IActionResult> Download(IFormFile videoFile, int startSeconds, int endSeconds, int videoHeight, int videoWeight, int flag)
         {
-            Console.WriteLine("Метод Download");
             byte[] videoBytes;
             if (videoFile != null && videoFile.Length > 0)
             {
@@ -38,47 +39,42 @@ namespace SharpServerMain.Controllers
                 }
             }
             else {
-                Console.WriteLine("Проблема с видео"); 
                 return BadRequest();
             }
-            uint hash = CalculateCrc32(videoBytes);
+
+            uint hash = CRC32.CalculateCrc32(videoBytes);
             int userId = Convert.ToInt32(HttpContext.User.Identity?.Name);
             string firstTime = FormatValues(startSeconds);
             string secondTime = FormatValues(endSeconds);
             string serverUrl = $"{Request.Scheme}://{Request.Host.Value}";
-            int? height = null;
-            int? width = null;
-            Console.WriteLine("Перед созданием класса");
-            Videoinfo videoinfo = new Videoinfo(userId, 1, videoBytes, firstTime, secondTime, hash, height, width, serverUrl);
+            Videoinfo videoinfo = new Videoinfo(userId, flag, videoBytes, firstTime, secondTime, hash, videoHeight, videoWeight, serverUrl);
             string json = JsonConvert.SerializeObject(videoinfo, Formatting.Indented);
-            string videoUrl = "https://example.com/api/videos";
-            Console.WriteLine("Перед хттп");
+            string videoUrl = "http://localhost:8080/jsonreq";
             using (HttpClient client = new HttpClient())
             {
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(videoUrl, content);
-                Console.WriteLine("Перед ифами");
                 if (response.IsSuccessStatusCode) 
                 {   
                     var responseData = await response.Content.ReadAsStringAsync();
                     RequestVideo newRequestVideo = JsonConvert.DeserializeObject<RequestVideo>(responseData)!;
-
-                    return View("Download", newRequestVideo.Bytevideo);
+                    return File(newRequestVideo.Bytevideo, "application/octet-stream", "file.mp4");
                 }
                 else
                 {
-                    Console.WriteLine("Ошибка");
                     return View("Download");
                 }
             }
         }
-        public static uint CalculateCrc32(byte[] bytes)
+        [HttpPost]
+        public IActionResult SaveVideo([FromBody] JsonElement json)
         {
-            using (Crc32Algorithm crc32 = new Crc32Algorithm())
-            {
-                byte[] hashBytes = crc32.ComputeHash(bytes);
-                return BitConverter.ToUInt32(hashBytes, 0);
-            }
+            string byteVideoStr = json.GetProperty("ByteVideo").GetString();
+            byte[] byteVideo = Convert.FromBase64String(byteVideoStr);
+
+            uint hash = Convert.ToUInt32(json.GetProperty("Hash").GetString());
+
+            return View("Download", byteVideo);
         }
 
 
